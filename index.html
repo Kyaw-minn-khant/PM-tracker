@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 Planned Maintenance Tracker — MEL740</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface2: #f8f9fa;
+    --border: #dee2e6;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --primary: #0d6efd;
+    --primary-dark: #0a58ca;
+    --header-bg: #1a1f2e;
+    --header-text: #ffffff;
+    --tab-active: #0d6efd;
+    --tab-inactive: #e9ecef;
+
+    --row-complete: #d4edda;
+    --row-complete-border: #a3d9b3;
+    --row-inprogress: #fff3cd;
+    --row-inprogress-border: #ffd97d;
+    --row-overdue: #f8d7da;
+    --row-overdue-border: #f5aeae;
+    --row-duesoon: #fffbcc;
+    --row-duesoon-border: #ffe066;
+    --row-cancelled: #e9ecef;
+    --row-upcoming: #f8f9fa;
+  }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .site-header {
+    background: var(--header-bg);
+    color: var(--header-text);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .site-header .title-block h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .site-header .title-block p {
+    font-size: 12px;
+    color: #adb5bd;
+    margin-top: 2px;
+  }
+  .site-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .today-badge {
+    background: #0d6efd;
+    color: white;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+  }
+  .btn-outline:hover { background: rgba(255,255,255,0.1); }
+  .btn-primary { background: #0d6efd; color: white; }
+  .btn-primary:hover { background: #0a58ca; }
+
+  /* MAIN */
+  .main-container { max-width: 1600px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  /* DASHBOARD */
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-card .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); }
+  .stat-card .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-card.total .stat-value { color: #0d6efd; }
+  .stat-card.complete .stat-value { color: #198754; }
+  .stat-card.inprogress .stat-value { color: #e67e00; }
+  .stat-card.overdue .stat-value { color: #dc3545; }
+  .stat-card.duesoon .stat-value { color: #b8a000; }
+  .stat-card.upcoming .stat-value { color: #6c757d; }
+  .stat-card.cancelled .stat-value { color: #495057; }
+
+  /* LEGEND */
+  .legend {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+  }
+  .legend-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-right: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 500; }
+  .legend-swatch {
+    width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0;
+  }
+
+  /* CONTROLS */
+  .controls {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .control-group { display: flex; align-items: center; gap: 7px; }
+  .control-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .controls input[type="text"],
+  .controls select {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--surface2);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    min-width: 130px;
+  }
+  .controls input[type="text"] { min-width: 200px; }
+  .controls input[type="text"]:focus,
+  .controls select:focus { border-color: #0d6efd; }
+  .controls .btn-reset {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .controls .btn-reset:hover { background: var(--border); }
+
+  /* MONTH TABS */
+  .month-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+  .month-tab {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .month-tab:hover { background: #e9ecef; color: var(--text); }
+  .month-tab.active { background: var(--tab-active); color: white; border-color: var(--tab-active); }
+
+  /* MONTH SECTIONS */
+  .month-section {
+    margin-bottom: 32px;
+    scroll-margin-top: 80px;
+  }
+  .month-section.hidden { display: none; }
+  .month-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .month-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .month-badge {
+    font-size: 12px;
+    font-weight: 600;
+    background: #e9ecef;
+    color: #495057;
+    padding: 3px 10px;
+    border-radius: 12px;
+  }
+
+  /* TABLE */
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    min-width: 960px;
+  }
+  thead th {
+    background: #1a1f2e;
+    color: #adb5bd;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 10px 12px;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 2px solid #2d3548;
+  }
+  thead th:first-child { border-radius: 0; }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: filter 0.1s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { filter: brightness(0.97); }
+  tbody td {
+    padding: 9px 12px;
+    vertical-align: middle;
+  }
+  .td-no { font-weight: 700; color: var(--text-muted); font-size: 12px; width: 36px; }
+  .td-name { font-weight: 500; min-width: 210px; }
+  .td-occurrence { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+  .td-date { font-size: 12px; white-space: nowrap; font-family: 'Courier New', monospace; }
+  .td-owner { font-weight: 600; font-size: 12px; white-space: nowrap; }
+  .td-owner .owner-select {
+    padding: 4px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    background: white;
+    cursor: pointer;
+    min-width: 90px;
+  }
+  .td-owner .owner-select:focus { outline: none; border-color: #0d6efd; }
+  .td-status select {
+    padding: 4px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    background: white;
+    cursor: pointer;
+    font-weight: 500;
+    width: 120px;
+  }
+  .td-approval { text-align: center; }
+  .td-approval input[type="checkbox"] {
+    width: 16px; height: 16px; cursor: pointer; accent-color: #0d6efd;
+  }
+  .td-mcm input[type="text"] {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 12px;
+    width: 140px;
+    background: white;
+    color: #0d6efd;
+    cursor: pointer;
+  }
+  .td-mcm input[type="text"]:focus {
+    border-color: #0d6efd;
+    outline: none;
+  }
+  .td-notes input[type="text"] {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 12px;
+    width: 180px;
+    background: white;
+  }
+  .td-notes input[type="text"]:focus {
+    border-color: #0d6efd;
+    outline: none;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  /* ROW COLORS */
+  tr.row-complete { background-color: var(--row-complete); }
+  tr.row-inprogress { background-color: var(--row-inprogress); }
+  tr.row-overdue { background-color: var(--row-overdue); }
+  tr.row-duesoon { background-color: var(--row-duesoon); }
+  tr.row-cancelled { background-color: var(--row-cancelled); }
+  tr.row-cancelled td { text-decoration: line-through; color: #888; }
+  tr.row-upcoming { background-color: var(--row-upcoming); }
+
+  /* NO RESULTS */
+  .no-results {
+    text-align: center;
+    padding: 32px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* PRINT */
+  @media print {
+    .site-header, .controls, .month-tabs, .legend, .btn, .no-print { display: none !important; }
+    .month-section.hidden { display: block !important; }
+    .table-wrapper { box-shadow: none; border: 1px solid #ccc; }
+    table { min-width: unset; }
+    thead th { position: static; }
+    body { background: white; }
+    .main-container { padding: 0; max-width: 100%; }
+    .month-section { break-inside: avoid; }
+  }
+
+  @media (max-width: 768px) {
+    .site-header { padding: 12px 14px; }
+    .main-container { padding: 12px 8px 30px; }
+    .dashboard { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+    .stat-card .stat-value { font-size: 22px; }
+    .controls input[type="text"] { min-width: 150px; }
+    .controls select { min-width: 110px; }
+  }
+
+  /* ===== SETTINGS MODAL ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #fff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 740px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+    overflow: hidden;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid #dee2e6;
+    background: #1a1f2e;
+    color: white;
+  }
+  .modal-header h2 { font-size: 17px; font-weight: 700; }
+  .modal-close {
+    background: none; border: none; color: #adb5bd;
+    font-size: 18px; cursor: pointer; line-height: 1;
+    padding: 2px 6px; border-radius: 4px;
+  }
+  .modal-close:hover { background: rgba(255,255,255,0.15); color: white; }
+  .modal-tabs {
+    display: flex;
+    gap: 0;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0 22px;
+  }
+  .modal-tab {
+    padding: 11px 18px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6c757d;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .modal-tab:hover { color: #212529; }
+  .modal-tab.active { color: #0d6efd; border-bottom-color: #0d6efd; }
+  .modal-tab-content {
+    padding: 20px 22px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .tab-desc {
+    font-size: 13px;
+    color: #6c757d;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  /* TEAM ADD ROW */
+  .team-add-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 14px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+  }
+  .team-add-row input[type="text"] {
+    flex: 1;
+    min-width: 120px;
+    padding: 8px 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+  }
+  .team-add-row input[type="text"]:focus { border-color: #0d6efd; }
+  /* TEAM LIST */
+  .team-list { display: flex; flex-direction: column; gap: 6px; }
+  .team-member-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: box-shadow 0.1s;
+  }
+  .team-member-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .member-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: #0d6efd;
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px;
+    flex-shrink: 0;
+  }
+  .member-info { flex: 1; min-width: 0; }
+  .member-name { font-weight: 600; font-size: 14px; }
+  .member-meta { font-size: 11px; color: #6c757d; margin-top: 1px; }
+  .member-edit-fields {
+    display: none;
+    gap: 6px;
+    flex: 2;
+    flex-wrap: wrap;
+  }
+  .member-edit-fields.visible { display: flex; }
+  .member-edit-fields input[type="text"] {
+    flex: 1;
+    min-width: 90px;
+    padding: 5px 8px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    font-size: 12px;
+    outline: none;
+  }
+  .member-edit-fields input[type="text"]:focus { border-color: #0d6efd; }
+  .btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .btn-edit { background: #e9ecef; color: #495057; }
+  .btn-edit:hover { background: #dee2e6; }
+  .btn-save { background: #0d6efd; color: white; }
+  .btn-save:hover { background: #0a58ca; }
+  .btn-delete { background: #f8d7da; color: #842029; }
+  .btn-delete:hover { background: #f5c2c7; }
+  /* REASSIGN GRID */
+  .reassign-grid { display: flex; flex-direction: column; gap: 8px; }
+  .reassign-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+  }
+  .reassign-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .reassign-task { flex: 1; font-size: 13px; font-weight: 500; min-width: 0; }
+  .reassign-task small { display: block; font-size: 11px; color: #6c757d; margin-top: 1px; }
+  .reassign-select {
+    padding: 6px 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 130px;
+    outline: none;
+    cursor: pointer;
+    background: #f8f9fa;
+  }
+  .reassign-select:focus { border-color: #0d6efd; }
+  .reassign-months { font-size: 11px; color: #6c757d; white-space: nowrap; }
+  .modal-footer {
+    padding: 14px 22px;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    background: #f8f9fa;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="title-block">
+    <h1>🏭 2026 Planned Maintenance Tracker</h1>
+    <p>MEL740 — Data Centre Preventative Maintenance Schedule</p>
+  </div>
+  <div class="header-right">
+    <div class="today-badge" id="todayBadge">📅 Loading...</div>
+    <button class="btn btn-outline no-print" onclick="exportCSV()">⬇ Export CSV</button>
+    <button class="btn btn-outline no-print" onclick="window.print()">🖨 Print</button>
+    <button class="btn btn-outline no-print" onclick="openSettings()">⚙ Settings</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="main-container">
+
+  <!-- DASHBOARD -->
+  <div class="dashboard" id="dashboard">
+    <div class="stat-card total"><div class="stat-label">Total Tasks</div><div class="stat-value" id="statTotal">0</div></div>
+    <div class="stat-card complete"><div class="stat-label">Complete</div><div class="stat-value" id="statComplete">0</div></div>
+    <div class="stat-card inprogress"><div class="stat-label">In Progress</div><div class="stat-value" id="statInProgress">0</div></div>
+    <div class="stat-card overdue"><div class="stat-label">Overdue</div><div class="stat-value" id="statOverdue">0</div></div>
+    <div class="stat-card duesoon"><div class="stat-label">Due Soon</div><div class="stat-value" id="statDueSoon">0</div></div>
+    <div class="stat-card upcoming"><div class="stat-label">Upcoming</div><div class="stat-value" id="statUpcoming">0</div></div>
+    <div class="stat-card cancelled"><div class="stat-label">Cancelled</div><div class="stat-value" id="statCancelled">0</div></div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <span class="legend-title">Legend:</span>
+    <div class="legend-item"><div class="legend-swatch" style="background:#f8d7da;border-color:#f5aeae"></div> Overdue</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#fff3cd;border-color:#ffd97d"></div> In Progress</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#fffbcc;border-color:#ffe066"></div> Due Soon (&lt;7 days)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#d4edda;border-color:#a3d9b3"></div> Complete</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#e9ecef;border-color:#ccc"></div> Cancelled</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#f8f9fa;border-color:#dee2e6"></div> Upcoming</div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls no-print">
+    <div class="control-group">
+      <label>🔍 Search</label>
+      <input type="text" id="searchInput" placeholder="Search maintenance name..." oninput="applyFilters()">
+    </div>
+    <div class="control-group">
+      <label>Month</label>
+      <select id="filterMonth" onchange="applyFilters()">
+        <option value="">All Months</option>
+        <option value="June">June</option>
+        <option value="July">July</option>
+        <option value="August">August</option>
+        <option value="September">September</option>
+        <option value="October">October</option>
+        <option value="November">November</option>
+        <option value="December">December</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Owner</label>
+      <select id="filterOwner" onchange="applyFilters()">
+        <option value="">All Owners</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Occurrence</label>
+      <select id="filterOccurrence" onchange="applyFilters()">
+        <option value="">All</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Status</label>
+      <select id="filterStatus" onchange="applyFilters()">
+        <option value="">All Statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Complete">Complete</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+    </div>
+    <button class="btn-reset no-print" onclick="resetFilters()">✕ Reset</button>
+  </div>
+
+  <!-- MONTH TABS -->
+  <div class="month-tabs no-print" id="monthTabs">
+    <a class="month-tab active" href="#month-June" onclick="scrollToMonth('June', this)">June</a>
+    <a class="month-tab" href="#month-July" onclick="scrollToMonth('July', this)">July</a>
+    <a class="month-tab" href="#month-August" onclick="scrollToMonth('August', this)">August</a>
+    <a class="month-tab" href="#month-September" onclick="scrollToMonth('September', this)">September</a>
+    <a class="month-tab" href="#month-October" onclick="scrollToMonth('October', this)">October</a>
+    <a class="month-tab" href="#month-November" onclick="scrollToMonth('November', this)">November</a>
+    <a class="month-tab" href="#month-December" onclick="scrollToMonth('December', this)">December</a>
+  </div>
+
+  <!-- MONTH SECTIONS (generated by JS) -->
+  <div id="sectionsContainer"></div>
+
+</div>
+
+<!-- ===== SETTINGS MODAL ===== -->
+<div id="settingsOverlay" class="modal-overlay" onclick="closeSettingsOutside(event)">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-header">
+      <h2 id="settingsTitle">⚙ Settings</h2>
+      <button class="modal-close" onclick="closeSettings()" title="Close">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchSettingsTab('team', this)">👥 Team Members</button>
+      <button class="modal-tab" onclick="switchSettingsTab('owners', this)">🔄 Reassign Task Owner</button>
+    </div>
+
+    <!-- TAB: TEAM MEMBERS -->
+    <div id="settingsTab-team" class="modal-tab-content">
+      <p class="tab-desc">Add, edit or remove team members. Changes apply immediately to all owner dropdowns.</p>
+      <div class="team-add-row">
+        <input type="text" id="newMemberName" placeholder="Name" maxlength="40">
+        <input type="text" id="newMemberRole" placeholder="Role (e.g. DCEO L4)" maxlength="60">
+        <input type="text" id="newMemberShift" placeholder="Shift (e.g. M to F)" maxlength="30">
+        <button class="btn btn-primary" onclick="addTeamMember()">+ Add</button>
+      </div>
+      <div class="team-list" id="teamList"></div>
+    </div>
+
+    <!-- TAB: REASSIGN TASK OWNER -->
+    <div id="settingsTab-owners" class="modal-tab-content" style="display:none">
+      <p class="tab-desc">Change the owner of a task across <strong>all months</strong> at once — no need to update each row individually.</p>
+      <div class="reassign-grid" id="reassignGrid"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeSettings()">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const MONTHS = ['June','July','August','September','October','November','December'];
+
+const RAW_DATA = {
+  June: [
+    {no:1,  name:'Fire System Maintenance (Annual)',    occurrence:'Annual',       start:'2026-06-01', end:'2026-06-12', owner:'Sam'},
+    {no:2,  name:'Generator Maintenance',              occurrence:'Bi-Annual',    start:'2026-06-01', end:'2026-06-19', owner:'Ayesha'},
+    {no:3,  name:'Fuel System Maintenance (Internal)', occurrence:'Quarterly',    start:'2026-06-01', end:'2026-06-05', owner:'Sam'},
+    {no:4,  name:'Fan Wall Maintenance',               occurrence:'Quarterly',    start:'2026-06-01', end:'2026-06-05', owner:'Sam'},
+    {no:5,  name:'CRAC Maintenance',                   occurrence:'Quarterly',    start:'2026-06-01', end:'2026-06-12', owner:'Ron'},
+    {no:6,  name:'Chiller Maintenance',                occurrence:'Monthly',      start:'2026-06-01', end:'2026-06-05', owner:'Ayesha'},
+    {no:7,  name:'Cooling Tower Cleaning',             occurrence:'Triannually',  start:'2026-06-01', end:'2026-06-26', owner:'Min'},
+    {no:8,  name:'Return Air Grille Tuning (Internal)',occurrence:'Monthly',      start:'2026-06-01', end:'2026-06-05', owner:'Elise'},
+    {no:9,  name:'Lift Maintenance',                   occurrence:'Monthly',      start:'2026-06-01', end:'2026-06-05', owner:'Elise'},
+    {no:10, name:'Stand-By Line-Up Testing',           occurrence:'Quarterly',    start:'2026-06-09', end:'2026-06-12', owner:'Min'},
+    {no:11, name:'Mechanical Maintenance',             occurrence:'Monthly',      start:'2026-06-09', end:'2026-06-19', owner:'Hussain'},
+    {no:12, name:'Mechanical Maintenance (Internal)',  occurrence:'Monthly',      start:'2026-06-09', end:'2026-06-12', owner:'Hussain'},
+    {no:13, name:'BMS Maintenance',                    occurrence:'Monthly',      start:'2026-06-09', end:'2026-06-19', owner:'Min'},
+    {no:14, name:'Fire System Maintenance (Monthly)',  occurrence:'Monthly',      start:'2026-06-15', end:'2026-06-19', owner:'Sam'},
+    {no:15, name:'CSMS Maintenance',                   occurrence:'Monthly',      start:'2026-06-15', end:'2026-06-19', owner:'Sam'},
+    {no:16, name:'Generator Operational Test',         occurrence:'Quarterly',    start:'2026-06-29', end:'2026-07-10', owner:'Ayesha'},
+  ],
+  July: [
+    {no:1,  name:'Fuel System Maintenance (Internal)', occurrence:'Quarterly',    start:'2026-07-06', end:'2026-07-10', owner:'Elise'},
+    {no:2,  name:'Chiller Maintenance',                occurrence:'Monthly',      start:'2026-07-06', end:'2026-07-10', owner:'Ayesha'},
+    {no:3,  name:'Return Air Grille Tuning (Internal)',occurrence:'Monthly',      start:'2026-07-06', end:'2026-07-10', owner:'Elise'},
+    {no:4,  name:'Lift Maintenance',                   occurrence:'Monthly',      start:'2026-07-06', end:'2026-07-10', owner:'Elise'},
+    {no:5,  name:'Mechanical Maintenance',             occurrence:'Monthly',      start:'2026-07-13', end:'2026-07-24', owner:'Hussain'},
+    {no:6,  name:'Mechanical Maintenance (Internal)',  occurrence:'Monthly',      start:'2026-07-13', end:'2026-07-17', owner:'Hussain'},
+    {no:7,  name:'CDU Maintenance',                    occurrence:'Quarterly',    start:'2026-07-13', end:'2026-07-17', owner:'Hussain'},
+    {no:8,  name:'Dark Site Test (Water)',             occurrence:'Bi-Annual',    start:'2026-07-13', end:'2026-07-17', owner:'Ayesha'},
+    {no:9,  name:'BMS Maintenance',                    occurrence:'Monthly',      start:'2026-07-13', end:'2026-07-24', owner:'Min'},
+    {no:10, name:'Fire System Maintenance (Monthly)',  occurrence:'Monthly',      start:'2026-07-20', end:'2026-07-24', owner:'Sam'},
+    {no:11, name:'CSMS Maintenance',                   occurrence:'Monthly',      start:'2026-07-20', end:'2026-07-24', owner:'Sam'},
+    {no:12, name:'Data Hall Forensic Clean',           occurrence:'Bi-Annual',    start:'2026-07-20', end:'2026-08-14', owner:'Elise'},
+  ],
+  August: [
+    {no:1,  name:'Fuel System Maintenance (Internal)', occurrence:'Quarterly',    start:'2026-08-03', end:'2026-08-07', owner:'Elise'},
+    {no:2,  name:'Chiller Maintenance',                occurrence:'Monthly',      start:'2026-08-03', end:'2026-08-07', owner:'Ayesha'},
+    {no:3,  name:'Return Air Grille Tuning (Internal)',occurrence:'Monthly',      start:'2026-08-03', end:'2026-08-07', owner:'Elise'},
+    {no:4,  name:'Lift Maintenance',                   occurrence:'Monthly',      start:'2026-08-03', end:'2026-08-07', owner:'Elise'},
+    {no:5,  name:'Mechanical Maintenance',             occurrence:'Monthly',      start:'2026-08-10', end:'2026-08-21', owner:'Hussain'},
+    {no:6,  name:'Mechanical Maintenance (Internal)',  occurrence:'Monthly',      start:'2026-08-10', end:'2026-08-14', owner:'Hussain'},
+    {no:7,  name:'BMS Maintenance',                    occurrence:'Monthly',      start:'2026-08-10', end:'2026-08-21', owner:'Min'},
+    {no:8,  name:'Fire System Maintenance (Monthly)',  occurrence:'Monthly',      start:'2026-08-17', end:'2026-08-21', owner:'Sam'},
+    {no:9,  name:'SLA Sensor Calibration (Internal)', occurrence:'Bi-Annual',    start:'2026-08-17', end:'2026-08-28', owner:'Elise'},
+    {no:10, name:'CSMS Maintenance',                   occurrence:'Monthly',      start:'2026-08-17', end:'2026-08-21', owner:'Sam'},
+    {no:11, name:'UPS Online',                         occurrence:'Annual',       start:'2026-08-24', end:'2026-09-18', owner:'Ron'},
+    {no:12, name:'Active Harmonic Filter Service',     occurrence:'Annual',       start:'2026-08-31', end:'2026-09-11', owner:'Min'},
+    {no:13, name:'Stand-By Line-Up Testing',           occurrence:'Quarterly',    start:'2026-08-31', end:'2026-09-04', owner:'Min'},
+  ],
+  September: [
+    {no:1,  name:'Fuel System Maintenance (Internal)', occurrence:'Quarterly',    start:'2026-09-07', end:'2026-09-11', owner:'Elise'},
+    {no:2,  name:'Fan Wall Maintenance',               occurrence:'Quarterly',    start:'2026-09-07', end:'2026-09-11', owner:'Sam'},
+    {no:3,  name:'CRAC Maintenance',                   occurrence:'Quarterly',    start:'2026-09-07', end:'2026-09-18', owner:'Ron'},
+    {no:4,  name:'Chiller Maintenance',                occurrence:'Monthly',      start:'2026-09-07', end:'2026-09-11', owner:'Ayesha'},
+    {no:5,  name:'Lift Maintenance',                   occurrence:'Monthly',      start:'2026-09-07', end:'2026-09-11', owner:'Elise'},
+    {no:6,  name:'Mechanical Maintenance',             occurrence:'Monthly',      start:'2026-09-14', end:'2026-09-25', owner:'Hussain'},
+    {no:7,  name:'Mechanical Maintenance (Internal)',  occurrence:'Monthly',      start:'2026-09-14', end:'2026-09-18', owner:'Hussain'},
+    {no:8,  name:'Fire Evacuation Drill',              occurrence:'Bi-Annual',    start:'2026-09-14', end:'2026-09-18', owner:'Ayesha'},
+    {no:9,  name:'BMS Maintenance',                    occurrence:'Monthly',      start:'2026-09-14', end:'2026-09-25', owner:'Min'},
+    {no:10, name:'Fire System Maintenance (Monthly)',  occurrence:'Monthly',      start:'2026-09-21', end:'2026-09-25', owner:'Sam'},
+    {no:11, name:'DP Sensor Calibration (Internal)',   occurrence:'Bi-Annual',    start:'2026-09-21', end:'2026-09-25', owner:'Elise'},
+    {no:12, name:'Hydraulic Pumps Maintenance',        occurrence:'Annual',       start:'2026-09-21', end:'2026-09-25', owner:'Sam'},
+    {no:13, name:'CSMS Maintenance',                   occurrence:'Monthly',      start:'2026-09-21', end:'2026-09-25', owner:'Sam'},
+    {no:14, name:'Generator Operational Test',         occurrence:'Quarterly',    start:'2026-09-28', end:'2026-10-09', owner:'Ayesha'},
+    {no:15, name:'RCD Testing',                        occurrence:'Bi-Annual',    start:'2026-09-28', end:'2026-10-02', owner:'Hussain'},
+    {no:16, name:'Fuel System Maintenance',            occurrence:'Bi-Annual',    start:'2026-09-28', end:'2026-10-09', owner:'Elise'},
+    {no:17, name:'Cooling Tower Cleaning',             occurrence:'Triannually',  start:'2026-09-28', end:'2026-10-30', owner:'Min'},
+  ],
+  October: [
+    {no:1,  name:'Fuel System Maintenance (Internal)', occurrence:'Quarterly',    start:'2026-10-05', end:'2026-10-09', owner:'Elise'},
+    {no:2,  name:'Chiller Maintenance',                occurrence:'Monthly',      start:'2026-10-05', end:'2026-10-09', owner:'Ayesha'},
+    {no:3,  name:'Return Air Grille Tuning (Internal)',occurrence:'Monthly',      start:'2026-10-05', end:'2026-10-09', owner:'Elise'},
+    {no:4,  name:'Lift Maintenance',                   occurrence:'Monthly',      start:'2026-10-05', end:'2026-10-09', owner:'Elise'},
+    {no:5,  name:'Mechanical Maintenance',             occurrence:'Monthly',      start:'2026-10-12', end:'2026-10-23', owner:'Hussain'},
+    {no:6,  name:'Mechanical Maintenance (Internal)',  occurrence:'Monthly',      start:'2026-10-12', end:'2026-10-16', owner:'Hussain'},
+    {no:7,  name:'CDU Maintenance',                    occurrence:'Quarterly',    start:'2026-10-12', end:'2026-10-16', owner:'Hussain'},
+    {no:8,  name:'BMS Maintenance',                    occurrence:'Monthly',      start:'2026-10-12', end:'2026-10-23', owner:'Min'},
+    {no:9,  name:'Fire System Maintenance (Bi-annual)',occurrence:'Bi-Annual',    start:'2026-10-19', end:'2026-10-23', owner:'Sam'},
+    {no:10, name:'UPS Offline',                        occurrence:'Annual',       start:'2026-10-19', end:'2026-12-04', owner:'Ron'},
+    {no:11, name:'CSMS Maintenance',                   occurrence:'Monthly',      start:'2026-10-19', end:'2026-10-23', owner:'Sam'},
+  ],
+  November: [
+    {no:1,  name:'TEGG Testing',                       occurrence:'Annual',       start:'2026-11-02', end:'2026-12-04', owner:'Min'},
+    {no:2,  name:'Fuel System Maintenance (Internal)', occurrence:'Quarterly',    start:'2026-11-02', end:'2026-11-06', owner:'Elise'},
+    {no:3,  name:'Chiller Maintenance',                occurrence:'Monthly',      start:'2026-11-02', end:'2026-11-06', owner:'Ayesha'},
+    {no:4,  name:'Return Air Grille Tuning (Internal)',occurrence:'Monthly',      start:'2026-11-02', end:'2026-11-06', owner:'Elise'},
+    {no:5,  name:'Lift Maintenance',                   occurrence:'Monthly',      start:'2026-11-02', end:'2026-12-09', owner:'Elise'},
+    {no:6,  name:'Mechanical Maintenance',             occurrence:'Monthly',      start:'2026-11-09', end:'2026-11-20', owner:'Hussain'},
+    {no:7,  name:'Mechanical Maintenance (Internal)',  occurrence:'Monthly',      start:'2026-11-09', end:'2026-11-13', owner:'Hussain'},
+    {no:8,  name:'Dark Site Test (Electrical)',        occurrence:'Annual',       start:'2026-11-09', end:'2026-11-13', owner:'Ayesha'},
+    {no:9,  name:'BMS Maintenance',                    occurrence:'Monthly',      start:'2026-11-09', end:'2026-11-20', owner:'Min'},
+    {no:10, name:'Fire System Maintenance (Monthly)',  occurrence:'Monthly',      start:'2026-11-16', end:'2026-11-20', owner:'Sam'},
+    {no:11, name:'CSMS Maintenance',                   occurrence:'Monthly',      start:'2026-11-16', end:'2026-11-20', owner:'Sam'},
+    {no:12, name:'Battery Testing',                    occurrence:'Bi-Annual',    start:'2026-11-16', end:'2026-11-27', owner:'Hussain'},
+    {no:13, name:'Stand-By Line-Up Testing',           occurrence:'Quarterly',    start:'2026-11-30', end:'2026-12-04', owner:'Min'},
+    {no:14, name:'CRAC Maintenance',                   occurrence:'Quarterly',    start:'2026-11-30', end:'2026-12-11', owner:'Ron'},
+  ],
+  December: [
+    {no:1,  name:'Generator Operational Test',         occurrence:'Quarterly',    start:'2026-12-07', end:'2026-12-18', owner:'Ayesha'},
+    {no:2,  name:'Fuel System Maintenance (Internal)', occurrence:'Quarterly',    start:'2026-12-07', end:'2026-12-11', owner:'Elise'},
+    {no:3,  name:'Fan Wall Maintenance',               occurrence:'Quarterly',    start:'2026-12-07', end:'2026-12-11', owner:'Sam'},
+    {no:4,  name:'BMS Maintenance',                    occurrence:'Monthly',      start:'2026-12-07', end:'2026-12-18', owner:'Min'},
+    {no:5,  name:'Fire System Maintenance (Monthly)',  occurrence:'Monthly',      start:'2026-12-14', end:'2026-12-18', owner:'Sam'},
+    {no:6,  name:'Chiller Maintenance',                occurrence:'Monthly',      start:'2026-12-14', end:'2026-12-18', owner:'Ayesha'},
+    {no:7,  name:'Mechanical Maintenance',             occurrence:'Monthly',      start:'2026-12-14', end:'2026-12-18', owner:'Hussain'},
+    {no:8,  name:'Mechanical Maintenance (Internal)',  occurrence:'Monthly',      start:'2026-12-14', end:'2026-12-19', owner:'Hussain'},
+    {no:9,  name:'CSMS Maintenance',                   occurrence:'Monthly',      start:'2026-12-14', end:'2026-12-18', owner:'Sam'},
+  ],
+};
+
+// ============================================================
+// STATE
+// ============================================================
+const STORAGE_KEY = 'mel740_maintenance_2026';
+
+function loadState() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    return s ? JSON.parse(s) : {};
+  } catch(e) { return {}; }
+}
+
+function saveState(state) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+let appState = loadState();
+
+function getRowKey(month, no) { return `${month}_${no}`; }
+
+function getRowState(month, no) {
+  const key = getRowKey(month, no);
+  return appState[key] || { status: 'Pending', approved: false, mcm: '', notes: '' };
+}
+
+function setRowState(month, no, patch) {
+  const key = getRowKey(month, no);
+  appState[key] = Object.assign(getRowState(month, no), patch);
+  saveState(appState);
+}
+
+// ============================================================
+// DATE HELPERS
+// ============================================================
+function today() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function parseDate(str) {
+  // str is YYYY-MM-DD
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function fmtDate(str) {
+  const d = parseDate(str);
+  return d.toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function classifyRow(row, status) {
+  const now = today();
+  const start = parseDate(row.start);
+  const end = parseDate(row.end);
+
+  if (status === 'Complete') return 'row-complete';
+  if (status === 'Cancelled') return 'row-cancelled';
+  if (end < now) return 'row-overdue';
+  if (now >= start && now <= end) return 'row-inprogress';
+  const diff = (start - now) / (1000 * 60 * 60 * 24);
+  if (diff >= 0 && diff <= 7) return 'row-duesoon';
+  return 'row-upcoming';
+}
+
+// ============================================================
+// POPULATE FILTER DROPDOWNS
+// ============================================================
+function populateFilters() {
+  const occurrences = new Set();
+  MONTHS.forEach(m => {
+    RAW_DATA[m].forEach(r => {
+      occurrences.add(r.occurrence);
+    });
+  });
+  refreshOwnerFilterDropdown();
+  const occSel = document.getElementById('filterOccurrence');
+  [...occurrences].sort().forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o; opt.textContent = o;
+    occSel.appendChild(opt);
+  });
+}
+
+// ============================================================
+// BUILD TABLE ROW
+// ============================================================
+function buildRow(month, row) {
+  const state = getRowState(month, row.no);
+  const rowClass = classifyRow(row, state.status);
+
+  const tr = document.createElement('tr');
+  tr.className = rowClass;
+  tr.dataset.month = month;
+  tr.dataset.name = row.name.toLowerCase();
+  tr.dataset.owner = row.owner;
+  tr.dataset.occurrence = row.occurrence;
+  tr.dataset.status = state.status;
+  tr.dataset.no = row.no;
+
+  // Status select options
+  const statusOptions = ['Pending','In Progress','Complete','Cancelled'];
+  const statusHtml = statusOptions.map(s =>
+    `<option value="${s}"${s === state.status ? ' selected' : ''}>${s}</option>`
+  ).join('');
+
+  // Owner dropdown from team members
+  const ownerOptions = getMemberNames().map(n =>
+    `<option value="${escHtml(n)}"${n === row.owner ? ' selected' : ''}>${escHtml(n)}</option>`
+  ).join('');
+
+  tr.innerHTML = `
+    <td class="td-no">${row.no}</td>
+    <td class="td-name">${escHtml(row.name)}</td>
+    <td class="td-occurrence">${escHtml(row.occurrence)}</td>
+    <td class="td-date">${fmtDate(row.start)}</td>
+    <td class="td-date">${fmtDate(row.end)}</td>
+    <td class="td-owner">
+      <select class="owner-select" onchange="onOwnerChange('${month}', ${row.no}, this)">
+        ${ownerOptions}
+      </select>
+    </td>
+    <td class="td-status">
+      <select onchange="onStatusChange('${month}', ${row.no}, this)">
+        ${statusHtml}
+      </select>
+    </td>
+    <td class="td-approval">
+      <input type="checkbox" title="Approved" ${state.approved ? 'checked' : ''}
+        onchange="onApprovalChange('${month}', ${row.no}, this)">
+    </td>
+    <td class="td-mcm">
+      <input type="text" placeholder="MCM link..." value="${escHtml(state.mcm)}"
+        title="${escHtml(state.mcm)}"
+        oninput="onMcmChange('${month}', ${row.no}, this)"
+        onclick="openMcmLink(this)">
+    </td>
+    <td class="td-notes">
+      <input type="text" placeholder="Notes..." value="${escHtml(state.notes)}"
+        oninput="onNotesChange('${month}', ${row.no}, this)">
+    </td>
+  `;
+  return tr;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ============================================================
+// EVENT HANDLERS
+// ============================================================
+function onOwnerChange(month, no, sel) {
+  const row = RAW_DATA[month].find(r => r.no === no);
+  if (row) row.owner = sel.value;
+  const tr = sel.closest('tr');
+  tr.dataset.owner = sel.value;
+}
+
+function onStatusChange(month, no, sel) {
+  setRowState(month, no, { status: sel.value });
+  const tr = sel.closest('tr');
+  tr.dataset.status = sel.value;
+  const row = RAW_DATA[month].find(r => r.no === no);
+  tr.className = classifyRow(row, sel.value);
+  updateDashboard();
+}
+
+function onApprovalChange(month, no, cb) {
+  setRowState(month, no, { approved: cb.checked });
+}
+
+function onMcmChange(month, no, inp) {
+  setRowState(month, no, { mcm: inp.value });
+  inp.title = inp.value;
+}
+
+function openMcmLink(inp) {
+  if (inp.value && (inp.value.startsWith('http://') || inp.value.startsWith('https://'))) {
+    window.open(inp.value, '_blank', 'noopener');
+  }
+}
+
+function onNotesChange(month, no, inp) {
+  setRowState(month, no, { notes: inp.value });
+}
+
+// ============================================================
+// BUILD SECTIONS
+// ============================================================
+function buildSections() {
+  const container = document.getElementById('sectionsContainer');
+  container.innerHTML = '';
+
+  MONTHS.forEach(month => {
+    const rows = RAW_DATA[month];
+    const section = document.createElement('div');
+    section.className = 'month-section';
+    section.id = `month-${month}`;
+
+    const header = document.createElement('div');
+    header.className = 'month-header';
+    header.innerHTML = `
+      <h2>📅 ${month} 2026 <span class="month-badge">${rows.length} tasks</span></h2>
+    `;
+    section.appendChild(header);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'table-wrapper';
+
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Maintenance Task</th>
+          <th>Occurrence</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Owner</th>
+          <th>Status</th>
+          <th>Approved</th>
+          <th>MCM Link</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+    `;
+    const tbody = document.createElement('tbody');
+    tbody.id = `tbody-${month}`;
+    rows.forEach(row => tbody.appendChild(buildRow(month, row)));
+    table.appendChild(tbody);
+
+    const noResults = document.createElement('div');
+    noResults.className = 'no-results';
+    noResults.id = `noresults-${month}`;
+    noResults.style.display = 'none';
+    noResults.textContent = 'No tasks match your filters.';
+
+    wrapper.appendChild(table);
+    section.appendChild(wrapper);
+    section.appendChild(noResults);
+    container.appendChild(section);
+  });
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const filterMonth = document.getElementById('filterMonth').value;
+  const filterOwner = document.getElementById('filterOwner').value;
+  const filterOccurrence = document.getElementById('filterOccurrence').value;
+  const filterStatus = document.getElementById('filterStatus').value;
+
+  MONTHS.forEach(month => {
+    const section = document.getElementById(`month-${month}`);
+    const tbody = document.getElementById(`tbody-${month}`);
+    const noResults = document.getElementById(`noresults-${month}`);
+
+    // Hide section if month filter active and doesn't match
+    if (filterMonth && filterMonth !== month) {
+      section.classList.add('hidden');
+      return;
+    } else {
+      section.classList.remove('hidden');
+    }
+
+    let anyVisible = false;
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(tr => {
+      const nameMatch = !search || tr.dataset.name.includes(search);
+      const ownerMatch = !filterOwner || tr.dataset.owner === filterOwner;
+      const occMatch = !filterOccurrence || tr.dataset.occurrence === filterOccurrence;
+      const statusMatch = !filterStatus || tr.dataset.status === filterStatus;
+
+      if (nameMatch && ownerMatch && occMatch && statusMatch) {
+        tr.style.display = '';
+        anyVisible = true;
+      } else {
+        tr.style.display = 'none';
+      }
+    });
+
+    noResults.style.display = anyVisible ? 'none' : 'block';
+  });
+}
+
+function resetFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterMonth').value = '';
+  document.getElementById('filterOwner').value = '';
+  document.getElementById('filterOccurrence').value = '';
+  document.getElementById('filterStatus').value = '';
+  applyFilters();
+}
+
+// ============================================================
+// MONTH TAB SCROLL
+// ============================================================
+function scrollToMonth(month, el) {
+  // Update active tab
+  document.querySelectorAll('.month-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+
+  // Show all months
+  const filterMonth = document.getElementById('filterMonth');
+  filterMonth.value = month;
+  applyFilters();
+
+  // Wait a tick then scroll
+  setTimeout(() => {
+    const section = document.getElementById(`month-${month}`);
+    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 50);
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function updateDashboard() {
+  let total = 0, complete = 0, inprogress = 0, overdue = 0, duesoon = 0, upcoming = 0, cancelled = 0;
+
+  MONTHS.forEach(month => {
+    RAW_DATA[month].forEach(row => {
+      total++;
+      const state = getRowState(month, row.no);
+      const cls = classifyRow(row, state.status);
+      if (cls === 'row-complete') complete++;
+      else if (cls === 'row-inprogress') inprogress++;
+      else if (cls === 'row-overdue') overdue++;
+      else if (cls === 'row-duesoon') duesoon++;
+      else if (cls === 'row-cancelled') cancelled++;
+      else upcoming++;
+    });
+  });
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statComplete').textContent = complete;
+  document.getElementById('statInProgress').textContent = inprogress;
+  document.getElementById('statOverdue').textContent = overdue;
+  document.getElementById('statDueSoon').textContent = duesoon;
+  document.getElementById('statUpcoming').textContent = upcoming;
+  document.getElementById('statCancelled').textContent = cancelled;
+}
+
+// ============================================================
+// TODAY BADGE
+// ============================================================
+function updateTodayBadge() {
+  const d = new Date();
+  const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+  document.getElementById('todayBadge').textContent = '📅 ' + d.toLocaleDateString('en-AU', opts);
+}
+
+// ============================================================
+// EXPORT CSV
+// ============================================================
+function exportCSV() {
+  const rows = [['Month','No','Maintenance Task','Occurrence','Start Date','End Date','Owner','Status','Approved','MCM Link','Notes']];
+
+  MONTHS.forEach(month => {
+    RAW_DATA[month].forEach(row => {
+      const state = getRowState(month, row.no);
+      rows.push([
+        month,
+        row.no,
+        row.name,
+        row.occurrence,
+        fmtDate(row.start),
+        fmtDate(row.end),
+        row.owner,
+        state.status,
+        state.approved ? 'TRUE' : 'FALSE',
+        state.mcm,
+        state.notes
+      ]);
+    });
+  });
+
+  const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'MEL740_Maintenance_2026.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  updateTodayBadge();
+  populateFilters();
+  buildSections();
+  updateDashboard();
+
+  // Highlight active month tab based on current month
+  const currentMonth = new Date().toLocaleString('en-AU', { month: 'long' });
+  const tabs = document.querySelectorAll('.month-tab');
+  tabs.forEach(tab => {
+    if (tab.textContent === currentMonth) {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    }
+  });
+}
+
+// ============================================================
+// SETTINGS — TEAM MEMBERS
+// ============================================================
+const TEAM_KEY = 'mel740_team_2026';
+
+const DEFAULT_TEAM = [
+  { name: 'Lee',     role: 'DCEO L4', shift: 'M to F' },
+  { name: 'Sam',     role: 'DCEO L4', shift: 'M to F' },
+  { name: 'Ron',     role: 'DCEO L3', shift: 'M to F' },
+  { name: 'Ayesha',  role: 'DCEO L3', shift: 'M to F' },
+  { name: 'Raj',     role: 'DCEO L3', shift: 'M to F' },
+  { name: 'Hussain', role: 'DCEO L3', shift: 'M to F' },
+  { name: 'Min',     role: 'DCEO L3', shift: 'M to F' },
+  { name: 'Elise',   role: 'DCEO L3', shift: 'M to F' },
+];
+
+function loadTeam() {
+  try {
+    const s = localStorage.getItem(TEAM_KEY);
+    return s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULT_TEAM));
+  } catch(e) { return JSON.parse(JSON.stringify(DEFAULT_TEAM)); }
+}
+
+function saveTeam(team) {
+  try { localStorage.setItem(TEAM_KEY, JSON.stringify(team)); } catch(e) {}
+}
+
+let teamMembers = loadTeam();
+
+function getMemberNames() {
+  return teamMembers.map(m => m.name);
+}
+
+function addTeamMember() {
+  const name = document.getElementById('newMemberName').value.trim();
+  const role = document.getElementById('newMemberRole').value.trim();
+  const shift = document.getElementById('newMemberShift').value.trim();
+  if (!name) { alert('Name is required.'); return; }
+  if (teamMembers.find(m => m.name.toLowerCase() === name.toLowerCase())) {
+    alert('A member with that name already exists.'); return;
+  }
+  teamMembers.push({ name, role, shift });
+  saveTeam(teamMembers);
+  document.getElementById('newMemberName').value = '';
+  document.getElementById('newMemberRole').value = '';
+  document.getElementById('newMemberShift').value = '';
+  renderTeamList();
+  refreshAllOwnerDropdowns();
+  refreshReassignGrid();
+}
+
+function deleteTeamMember(name) {
+  if (!confirm(`Remove ${name} from the team?`)) return;
+  teamMembers = teamMembers.filter(m => m.name !== name);
+  saveTeam(teamMembers);
+  renderTeamList();
+  refreshAllOwnerDropdowns();
+  refreshReassignGrid();
+}
+
+function startEditMember(name) {
+  const row = document.querySelector(`.team-member-row[data-member="${CSS.escape(name)}"]`);
+  if (!row) return;
+  row.querySelector('.member-info').style.display = 'none';
+  row.querySelector('.member-edit-fields').classList.add('visible');
+  row.querySelector('.btn-edit').style.display = 'none';
+  row.querySelector('.btn-save-edit').style.display = '';
+}
+
+function saveEditMember(oldName) {
+  const row = document.querySelector(`.team-member-row[data-member="${CSS.escape(oldName)}"]`);
+  if (!row) return;
+  const inputs = row.querySelectorAll('.member-edit-fields input');
+  const newName = inputs[0].value.trim();
+  const newRole = inputs[1].value.trim();
+  const newShift = inputs[2].value.trim();
+  if (!newName) { alert('Name cannot be empty.'); return; }
+  const idx = teamMembers.findIndex(m => m.name === oldName);
+  if (idx === -1) return;
+
+  // If name changed, update all task owners in appState and RAW_DATA
+  if (newName !== oldName) {
+    MONTHS.forEach(month => {
+      RAW_DATA[month].forEach(r => {
+        if (r.owner === oldName) r.owner = newName;
+      });
+    });
+    // Update persisted owner overrides
+    Object.keys(appState).forEach(key => {
+      if (appState[key].owner === oldName) appState[key].owner = newName;
+    });
+    saveState(appState);
+  }
+
+  teamMembers[idx] = { name: newName, role: newRole, shift: newShift };
+  saveTeam(teamMembers);
+  renderTeamList();
+  refreshAllOwnerDropdowns();
+  refreshReassignGrid();
+  rebuildSectionsOwners();
+}
+
+function renderTeamList() {
+  const list = document.getElementById('teamList');
+  if (!list) return;
+  list.innerHTML = '';
+  teamMembers.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'team-member-row';
+    row.dataset.member = m.name;
+    const initials = m.name.substring(0,2).toUpperCase();
+    row.innerHTML = `
+      <div class="member-avatar">${escHtml(initials)}</div>
+      <div class="member-info">
+        <div class="member-name">${escHtml(m.name)}</div>
+        <div class="member-meta">${escHtml(m.role || '')}${m.shift ? ' · ' + escHtml(m.shift) : ''}</div>
+      </div>
+      <div class="member-edit-fields">
+        <input type="text" value="${escHtml(m.name)}" placeholder="Name">
+        <input type="text" value="${escHtml(m.role||'')}" placeholder="Role">
+        <input type="text" value="${escHtml(m.shift||'')}" placeholder="Shift">
+      </div>
+      <button class="btn-sm btn-edit" onclick="startEditMember('${escHtml(m.name)}')">✏ Edit</button>
+      <button class="btn-sm btn-save btn-save-edit" style="display:none" onclick="saveEditMember('${escHtml(m.name)}')">💾 Save</button>
+      <button class="btn-sm btn-delete" onclick="deleteTeamMember('${escHtml(m.name)}')">🗑</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+// ============================================================
+// SETTINGS — REASSIGN TASK OWNER
+// ============================================================
+// Build a unique task list: unique task names with which months they appear in
+function getUniqueTasksWithMonths() {
+  const map = {}; // taskName -> { occurrence, months: [], currentOwner }
+  MONTHS.forEach(month => {
+    RAW_DATA[month].forEach(r => {
+      if (!map[r.name]) {
+        map[r.name] = { occurrence: r.occurrence, months: [], currentOwner: r.owner };
+      }
+      map[r.name].months.push(month);
+    });
+  });
+  return Object.entries(map).map(([name, v]) => ({ name, ...v }));
+}
+
+function refreshReassignGrid() {
+  const grid = document.getElementById('reassignGrid');
+  if (!grid) return;
+  const tasks = getUniqueTasksWithMonths();
+  const names = getMemberNames();
+  grid.innerHTML = '';
+  tasks.forEach(task => {
+    const row = document.createElement('div');
+    row.className = 'reassign-row';
+    const optionsHtml = names.map(n =>
+      `<option value="${escHtml(n)}"${n === task.currentOwner ? ' selected' : ''}>${escHtml(n)}</option>`
+    ).join('');
+    row.innerHTML = `
+      <div class="reassign-task">
+        ${escHtml(task.name)}
+        <small>${escHtml(task.occurrence)}</small>
+      </div>
+      <span class="reassign-months">${task.months.length} month${task.months.length !== 1 ? 's' : ''}</span>
+      <select class="reassign-select" onchange="reassignTaskOwner('${escHtml(task.name)}', this.value)">
+        ${optionsHtml}
+      </select>
+    `;
+    grid.appendChild(row);
+  });
+}
+
+function reassignTaskOwner(taskName, newOwner) {
+  // Update RAW_DATA for all months
+  MONTHS.forEach(month => {
+    RAW_DATA[month].forEach(r => {
+      if (r.name === taskName) r.owner = newOwner;
+    });
+  });
+  // Rebuild affected rows in the DOM
+  rebuildSectionsOwners();
+  refreshAllOwnerDropdowns();
+}
+
+// Rebuild only the owner cell of all visible rows (no full rebuild needed)
+function rebuildSectionsOwners() {
+  MONTHS.forEach(month => {
+    const tbody = document.getElementById(`tbody-${month}`);
+    if (!tbody) return;
+    RAW_DATA[month].forEach(row => {
+      const tr = tbody.querySelector(`tr[data-no="${row.no}"]`);
+      if (!tr) return;
+      tr.dataset.owner = row.owner;
+      // Update owner cell (6th td, index 5)
+      const ownerTd = tr.querySelectorAll('td')[5];
+      if (ownerTd) ownerTd.textContent = row.owner;
+    });
+  });
+  // Refresh filter dropdown
+  refreshOwnerFilterDropdown();
+}
+
+function refreshOwnerFilterDropdown() {
+  const sel = document.getElementById('filterOwner');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Owners</option>';
+  getMemberNames().forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    if (n === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function refreshAllOwnerDropdowns() {
+  refreshOwnerFilterDropdown();
+}
+
+// ============================================================
+// SETTINGS MODAL OPEN/CLOSE
+// ============================================================
+function openSettings() {
+  renderTeamList();
+  refreshReassignGrid();
+  document.getElementById('settingsOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeSettingsOutside(e) {
+  if (e.target === document.getElementById('settingsOverlay')) closeSettings();
+}
+
+function switchSettingsTab(tab, el) {
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('settingsTab-team').style.display = tab === 'team' ? '' : 'none';
+  document.getElementById('settingsTab-owners').style.display = tab === 'owners' ? '' : 'none';
+  if (tab === 'owners') refreshReassignGrid();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeSettings();
+});
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
